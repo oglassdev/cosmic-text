@@ -429,6 +429,8 @@ impl<'a> Attrs<'a> {
             && self.style == other.style
             && self.weight == other.weight
             && self.font_features == other.font_features
+            && self.metrics_opt == other.metrics_opt
+            && self.letter_spacing_opt == other.letter_spacing_opt
     }
 }
 

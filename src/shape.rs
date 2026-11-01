@@ -21,7 +21,6 @@ use core::ops::Range;
 use core_maths::CoreFloat;
 use fontdb::Style;
 use unicode_script::{Script, UnicodeScript};
-use unicode_segmentation::UnicodeSegmentation;
 
 /// The shaping strategy of some text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -859,25 +858,27 @@ impl ShapeWord {
                 span_rtl,
             );
         } else {
-            // Complex text path: Full grapheme iteration and attribute processing
+            // Complex text path: split the word wherever the attributes stop being
+            // compatible. Check every char, not only grapheme starts, so a combining
+            // mark in its own span keeps its attributes.
             let mut start_run = word_range.start;
-            let mut attrs = attrs_list.defaults();
-            for (egc_i, _egc) in word.grapheme_indices(true) {
-                let start_egc = word_range.start + egc_i;
-                let attrs_egc = attrs_list.get_span(start_egc);
-                if !attrs.compatible(&attrs_egc) {
+            let mut attrs = attrs_list.get_span(start_run);
+            for (char_i, _c) in word.char_indices() {
+                let start_char = word_range.start + char_i;
+                let attrs_char = attrs_list.get_span(start_char);
+                if !attrs.compatible(&attrs_char) {
                     shaping.run(
                         &mut glyphs,
                         font_system,
                         line,
                         attrs_list,
                         start_run,
-                        start_egc,
+                        start_char,
                         span_rtl,
                     );
 
-                    start_run = start_egc;
-                    attrs = attrs_egc;
+                    start_run = start_char;
+                    attrs = attrs_char;
                 }
             }
             if start_run < word_range.end {
